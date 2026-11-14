@@ -3,6 +3,7 @@ from pathlib import Path
 import time
 
 import cv2
+import numpy as np
 from ultralytics import YOLO
 
 
@@ -36,6 +37,33 @@ VIDEO_CONFIG = {
         ],
     },
 }
+
+
+def scale_zone(zone, width, height):
+    """Convert normalized zone coordinates to pixel coordinates."""
+    points = np.asarray(
+        [[x * (width - 1), y * (height - 1)] for x, y in zone],
+        dtype=np.int32,
+    )
+    return points
+
+
+def keep_detections_in_zone(result, polygon):
+    """Keep detections whose bounding-box center falls inside the zone."""
+    if result.boxes is None:
+        return result
+
+    box_coordinates = result.boxes.xyxy
+    if hasattr(box_coordinates, "cpu"):
+        boxes = box_coordinates.cpu().numpy()
+    else:
+        boxes = np.asarray(box_coordinates)
+    indices = []
+    for index, (x1, y1, x2, y2) in enumerate(boxes):
+        center = ((x1 + x2) / 2, (y1 + y2) / 2)
+        if cv2.pointPolygonTest(polygon, center, False) >= 0:
+            indices.append(index)
+    return result[indices]
 
 
 def parse_args():
@@ -111,6 +139,8 @@ def main():
         if width <= 0 or height <= 0:
             raise RuntimeError(
                 f"Could not read video dimensions: {video_path}")
+        zone_polygon = scale_zone(
+            VIDEO_CONFIG["zones"][args.video], width, height)
 
         # output_path.parent.mkdir(parents=True, exist_ok=True) - ne triba jer folder svakako postoji
         writer = cv2.VideoWriter(
@@ -138,7 +168,15 @@ def main():
             #     predict_options["device"] = args.device
 
             result = model.predict(**predict_options)[0]
-            annotated_frame = result.plot()
+            zone_result = keep_detections_in_zone(result, zone_polygon)
+            annotated_frame = zone_result.plot()
+            cv2.polylines(
+                annotated_frame,
+                [zone_polygon],
+                isClosed=True,
+                color=(0, 255, 255),
+                thickness=2,
+            )
             writer.write(annotated_frame)
             frames_processed += 1
 

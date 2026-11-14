@@ -9,9 +9,10 @@
             "name": "Python Debugger: With Arguments",
             "type": "debugpy",
             "request": "launch",
-            "program": "${file}",
+            "program": "${workspaceFolder}/detect_video.py",
+            "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
-            "args": ["--video", "skladiste-ljudi", "--show"]
+            "args": ["--video", "bus-ljudi", "--show"]
         }
     ]
 }
