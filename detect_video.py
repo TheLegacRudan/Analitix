@@ -39,6 +39,24 @@ VIDEO_CONFIG = {
 }
 
 
+def expand_zone(zone):
+    """Expand a normalized rectangular zone on each side, clamped to the frame."""
+    xs = [point[0] for point in zone]
+    ys = [point[1] for point in zone]
+    left, right = min(xs), max(xs)
+    top, bottom = min(ys), max(ys)
+    diffX = right - left
+    diffY = bottom - top
+    margin_x = (0.15/(diffX+0.6)) # only one calculation per zone, not expensive
+    margin_y = (0.15/(diffY+0.6))
+
+    left = max(0.0, left - margin_x)
+    right = min(1.0, right + margin_x)
+    top = max(0.0, top - margin_y)
+    bottom = min(1.0, bottom + margin_y)
+    return [[left, top], [right, top], [right, bottom], [left, bottom]]
+
+
 def scale_zone(zone, width, height):
     """Convert normalized zone coordinates to pixel coordinates."""
     points = np.asarray(
@@ -137,12 +155,13 @@ def main():
         width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
         if width <= 0 or height <= 0:
-            raise RuntimeError(
-                f"Could not read video dimensions: {video_path}")
-        zone_polygon = scale_zone(
-            VIDEO_CONFIG["zones"][args.video], width, height)
+            raise RuntimeError(f"Could not read video dimensions: {video_path}")
+        
+        zone = VIDEO_CONFIG["zones"][args.video]
+        zone_polygon = scale_zone(zone, width, height)
+        detection_polygon = scale_zone(expand_zone(zone), width, height)
 
-        # output_path.parent.mkdir(parents=True, exist_ok=True) - ne triba jer folder svakako postoji
+        output_path.parent.mkdir(parents=True, exist_ok=True)
         writer = cv2.VideoWriter(
             str(output_path),
             cv2.VideoWriter_fourcc(*"mp4v"),
@@ -168,8 +187,28 @@ def main():
             #     predict_options["device"] = args.device
 
             result = model.predict(**predict_options)[0]
-            zone_result = keep_detections_in_zone(result, zone_polygon)
+            zone_result = keep_detections_in_zone(result, detection_polygon)
             annotated_frame = zone_result.plot()
+            cv2.polylines(
+                annotated_frame,
+                [detection_polygon],
+                isClosed=True,
+                color=(255, 0, 0),
+                thickness=2,
+            )
+            #only text, not necessary
+            x, y = detection_polygon.reshape(-1, 2)[0]
+            cv2.putText(
+                annotated_frame,
+                "DETECTION ZONE",
+                (int(x), int(y) - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (255, 0, 0),
+                1,
+                cv2.LINE_AA,
+            )
+
             cv2.polylines(
                 annotated_frame,
                 [zone_polygon],
@@ -177,6 +216,20 @@ def main():
                 color=(0, 255, 255),
                 thickness=2,
             )
+
+            #only text, not necessary
+            x, y = zone_polygon.reshape(-1, 2)[0]
+            cv2.putText(
+                annotated_frame,
+                "ALARM ZONE",
+                (int(x), int(y) - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (0, 255, 255),
+                1,
+                cv2.LINE_AA,
+            )
+
             writer.write(annotated_frame)
             frames_processed += 1
 
