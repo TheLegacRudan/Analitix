@@ -1,4 +1,5 @@
 import argparse
+import json
 from pathlib import Path
 import time
 
@@ -37,6 +38,7 @@ VIDEO_CONFIG = {
         ],
     },
 }
+ALARM_LOG = ROOT / "alarms.json"
 
 
 def expand_zone(zone):
@@ -82,6 +84,89 @@ def keep_detections_in_zone(result, polygon):
         if cv2.pointPolygonTest(polygon, center, False) >= 0:
             indices.append(index)
     return result[indices]
+
+
+def format_video_time(seconds):
+    milliseconds = round(seconds * 1000)
+    hours, remainder = divmod(milliseconds, 3_600_000)
+    minutes, remainder = divmod(remainder, 60_000)
+    whole_seconds, milliseconds = divmod(remainder, 1000)
+    return f"{hours:02}:{minutes:02}:{whole_seconds:02}.{milliseconds:03}"
+
+
+def load_alarms(path):
+    if not path.exists():
+        return []
+    alarms = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(alarms, list) or not all(
+        isinstance(alarm, dict) for alarm in alarms
+    ):
+        raise ValueError(f"Alarm log must contain a JSON list: {path}")
+    return alarms
+
+
+def save_alarms(path, alarms):
+    temporary_path = path.with_suffix(path.suffix + ".tmp")
+    temporary_path.write_text(
+        json.dumps(alarms, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    temporary_path.replace(path)
+
+
+def update_alarm_states(result, video_name, alarm_polygon, now, states, alarms):
+    """Track people inside the alarm zone and record qualified dwell events."""
+    boxes = result.boxes
+    if boxes is None or boxes.id is None:
+        return False, []
+
+    coordinates = boxes.xyxy.cpu().numpy()
+    track_ids = boxes.id.cpu().numpy().astype(int)
+    classes = boxes.cls.cpu().numpy().astype(int)
+    changed = False
+    triggered = []
+
+    for coordinates_for_box, track_id, class_id in zip(
+        coordinates, track_ids, classes
+    ):
+        if class_id != 0:
+            continue
+        track_id = int(track_id)
+
+        x1, y1, x2, y2 = coordinates_for_box
+        center = ((x1 + x2) / 2, (y1 + y2) / 2)
+        inside_alarm_zone = (
+            cv2.pointPolygonTest(alarm_polygon, center, False) >= 0
+        )
+
+        if inside_alarm_zone:
+            state = states.setdefault(
+                track_id,
+                {"entered_at": now, "alarm": None},
+            )
+            if (
+                state["alarm"] is None
+                and now - state["entered_at"] >= VIDEO_CONFIG["dwell_seconds"]
+            ):
+                alarm = {
+                    "video": video_name,
+                    "track_id": track_id,
+                    "start_time": format_video_time(
+                        state["entered_at"] + VIDEO_CONFIG["dwell_seconds"]
+                    ),
+                    "end_time": None,
+                }
+                state["alarm"] = alarm
+                alarms.append(alarm)
+                triggered.append(alarm)
+                changed = True
+        else:
+            state = states.pop(track_id, None)
+            if state is not None and state["alarm"] is not None:
+                state["alarm"]["end_time"] = format_video_time(now)
+                changed = True
+
+    return changed, triggered
 
 
 def parse_args():
@@ -144,6 +229,9 @@ def main():
     if not capture.isOpened():
         raise RuntimeError(f"Could not open input video: {video_path}")
 
+    alarms = load_alarms(ALARM_LOG)
+    save_alarms(ALARM_LOG, alarms)
+    alarm_states = {}
     writer = None
     frames_processed = 0
     try:
@@ -183,10 +271,23 @@ def main():
                 "verbose": False,
             }
 
-            # if args.device:
-            #     predict_options["device"] = args.device
+            result = model.track(persist=True, **predict_options)[0]
+            alarms_changed, triggered = update_alarm_states(
+                result,
+                args.video,
+                zone_polygon,
+                frames_processed / fps,
+                alarm_states,
+                alarms,
+            )
+            for alarm in triggered:
+                print(
+                    f"ALARM: {args.video}, person track {alarm['track_id']}, "
+                    f"started at {alarm['start_time']}"
+                )
+            if alarms_changed:
+                save_alarms(ALARM_LOG, alarms)
 
-            result = model.predict(**predict_options)[0]
             zone_result = keep_detections_in_zone(result, detection_polygon)
             annotated_frame = zone_result.plot()
             cv2.polylines(
@@ -250,6 +351,7 @@ def main():
 
     print(f"Processed {frames_processed} frames.")
     print(f"Annotated video saved to: {output_path}")
+    print(f"Alarm log saved to: {ALARM_LOG}")
 
 
 if __name__ == "__main__":
