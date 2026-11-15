@@ -12,7 +12,7 @@
             "program": "${workspaceFolder}/detect_video.py",
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
-            "args": ["--video", "skladiste-osoba", "--show"]
+            "args": ["--video", "stanica-noc", "--show"]
         }
     ]
 }

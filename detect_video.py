@@ -187,7 +187,8 @@ def update_alarm_states(result, video_name, alarm_polygon, now, states, alarms):
                 alarm = {
                     "video": video_name,
                     "track_id": track_id,
-                    "start_time": format_video_time(
+                    "person_in_frame_time": format_video_time(state["entered_at"]),
+                    "alarm_triggered_time": format_video_time(
                         state["entered_at"] + VIDEO_CONFIG["dwell_seconds"]
                     ),
                     "end_time": None,
@@ -319,7 +320,7 @@ def main():
             for alarm in triggered:
                 print(
                     f"ALARM: {args.video}, person track {alarm['track_id']}, "
-                    f"started at {alarm['start_time']}"
+                    f"started at {alarm['alarm_triggered_time']}"
                 )
             if alarms_changed:
                 save_alarms(ALARM_LOG, alarms)
