@@ -1,9 +1,9 @@
 tracker_type: bytetrack
 track_high_thresh: 0.25
-track_low_thresh: 0.05
+track_low_thresh: 0.1
 new_track_thresh: 0.25
 track_buffer: 30
-match_thresh: 0.9
+match_thresh: 0.8
 fuse_score: True
 
 # original file
@@ -15,11 +15,6 @@ fuse_score: True
 # track_buffer: 30 # (int) Frames to keep lost tracks alive; higher handles occlusion, increases ID switches risk
 # match_thresh: 0.8 # (float) Association similarity threshold (IoU/cost); tune with detector quality
 # fuse_score: True # (bool) Fuse detection score with motion/IoU for matching; stabilizes weak detections
-
-
-
-
-
 
 # neuspjeli botsort
 # tracker_type: botsort
