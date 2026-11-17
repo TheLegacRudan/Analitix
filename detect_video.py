@@ -328,7 +328,7 @@ def main():
 
             # zaokruzi samo one ljude kojima je centar u detection zoni
             zone_result = keep_detections_in_zone(result, detection_polygon)
-            annotated_frame = zone_result.plot()
+            annotated_frame = zone_result.plot(conf=False, font_size=2, line_width=1)
 
             # iscrtava detection zone, nije potrebno
             # cv2.polylines(
