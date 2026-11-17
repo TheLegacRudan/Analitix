@@ -1,12 +1,22 @@
-tracker_type: bytetrack
-track_high_thresh: 0.25
-track_low_thresh: 0.1
-new_track_thresh: 0.25
+# VERZIJA NAJBOLJA ZA SKLADISTE-LJUDI I SKLADISTE-OSOBA
+tracker_type: tracktrack
+track_high_thresh: 0.6
+track_low_thresh: 0.25
+new_track_thresh: 0.7
 track_buffer: 30
-match_thresh: 0.8
-fuse_score: True
+match_thresh: 0.7
+with_reid: False
 
-# original file
+# VERZIJA NAJBOLJA ZA STANICA-NOC
+# tracker_type: bytetrack
+# track_high_thresh: 0.25
+# track_low_thresh: 0.05
+# new_track_thresh: 0.25
+# track_buffer: 30
+# match_thresh: 0.9
+# fuse_score: True
+
+# original file za bytetrack
 # C:\Users\Admin\Desktop\Analitix\venv\Lib\site-packages\ultralytics\cfg\trackers\bytetrack.yaml
 # tracker_type: bytetrack # (str) Tracker backend: bytetrack
 # track_high_thresh: 0.25 # (float) First-stage match threshold; raise for cleaner tracks, lower to keep more
@@ -16,15 +26,12 @@ fuse_score: True
 # match_thresh: 0.8 # (float) Association similarity threshold (IoU/cost); tune with detector quality
 # fuse_score: True # (bool) Fuse detection score with motion/IoU for matching; stabilizes weak detections
 
-# neuspjeli botsort
-# tracker_type: botsort
-# with_reid: True
-# track_high_thresh: 0.25
-# track_low_thresh: 0.05
-# new_track_thresh: 0.25
-# track_buffer: 30
-# match_thresh: 0.9
-# fuse_score: True
-# gmc_method: none
-# proximity_thresh: 0.5
-# appearance_thresh: 0.5
+# original filze za tracktrack
+# C:\Users\Admin\Desktop\Analitix\venv\Lib\site-packages\ultralytics\cfg\trackers\tracktrack.yaml
+# tracker_type: tracktrack # (str) Tracker backend: tracktrack
+# track_high_thresh: 0.6 # (float) High-confidence detection threshold
+# track_low_thresh: 0.25 # (float) Low-confidence detection threshold for second stage
+# new_track_thresh: 0.7 # (float) Minimum score to start a new track via track-aware initialization (TAI)
+# track_buffer: 30 # (int) Frames to keep lost tracks alive
+# match_thresh: 0.7 # (float) Initial matching threshold for iterative assignment
+# with_reid: False

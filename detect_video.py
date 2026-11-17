@@ -183,8 +183,9 @@ def main():
                 "verbose": False,
             }
 
-            # result = model.track(persist=True, **predict_options)[0]
             result = model.track(persist=True, tracker="yolo_config.yaml", **predict_options)[0]
+            # result = model.track(persist=True, **predict_options)[0]
+
             alarms_changed, triggered = update_alarm_states(
                 result,
                 args.video,
