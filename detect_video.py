@@ -6,7 +6,12 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 
-from alarm_handling import load_alarms, save_alarms, update_alarm_states
+from alarm_handling import (
+    draw_triggered_alarm_boxes,
+    load_alarms,
+    save_alarms,
+    update_alarm_states,
+)
 
 
 ROOT = Path(__file__).resolve().parent
@@ -204,6 +209,7 @@ def main():
             # zaokruzi samo one ljude kojima je centar u detection zoni
             zone_result = keep_detections_in_zone(result, detection_polygon)
             annotated_frame = zone_result.plot(conf=False, font_size=2, line_width=1)
+            draw_triggered_alarm_boxes(annotated_frame, zone_result, alarm_states)
 
             # iscrtava detection zone, nije potrebno
             # cv2.polylines(

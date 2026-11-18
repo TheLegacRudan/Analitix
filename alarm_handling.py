@@ -133,3 +133,20 @@ def update_alarm_states(
                 changed = True
 
     return changed, triggered
+
+
+def draw_triggered_alarm_boxes(frame, result, states):
+    """Draw triggered alarm tracks in red over the default detection boxes."""
+    boxes = result.boxes
+    if boxes is None or boxes.id is None:
+        return
+
+    coordinates = boxes.xyxy.cpu().numpy()
+    track_ids = boxes.id.cpu().numpy().astype(int)
+    for box, track_id in zip(coordinates, track_ids):
+        state = states.get(int(track_id))
+        if state is None or state["alarm"] is None:
+            continue
+
+        x1, y1, x2, y2 = (int(round(float(value))) for value in box)
+        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)

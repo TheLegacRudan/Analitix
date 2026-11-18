@@ -7,6 +7,7 @@ from types import SimpleNamespace
 import numpy as np
 
 from alarm_handling import (
+    draw_triggered_alarm_boxes,
     format_video_time,
     load_alarms,
     save_alarms,
@@ -174,6 +175,23 @@ class UpdateAlarmStatesTests(unittest.TestCase):
         self.assertFalse(changed)
         self.assertEqual(triggered, [])
         self.assertEqual(states, {})
+
+    def test_draws_triggered_alarm_boxes_red_and_leaves_other_boxes_unchanged(self):
+        frame = np.zeros((40, 40, 3), dtype=np.uint8)
+        result = make_result(
+            [[5.0, 5.0, 15.0, 15.0], [20.0, 20.0, 30.0, 30.0]],
+            [1, 2],
+            [0, 0],
+        )
+        states = {
+            1: {"entered_at": 0, "alarm": {"track_id": 1}},
+            2: {"entered_at": 0, "alarm": None},
+        }
+
+        draw_triggered_alarm_boxes(frame, result, states)
+
+        self.assertEqual(frame[5, 10].tolist(), [0, 0, 255])
+        self.assertEqual(frame[20, 25].tolist(), [0, 0, 0])
 
 
 if __name__ == "__main__":

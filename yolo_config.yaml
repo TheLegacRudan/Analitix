@@ -1,28 +1,28 @@
-# trial verzija za BUS-LJUDI
-tracker_type: botsort
-track_high_thresh: 0.6          
-track_low_thresh: 0.15          
-new_track_thresh: 0.7           
-track_buffer: 45                
-match_thresh: 0.8              
-fuse_score: True                # Fuse detection confidence with motion/IoU scores to stabilize weak bounding boxes
-# BoT-SORT specifics
-gmc_method: none                # motion
-# ReID model related thresh
-proximity_thresh: 0.5           # Standard spatial proximity threshold for candidate matching
-appearance_thresh: 0.85         # Slightly raised to ensure high visual similarity before re-assigning an ID, preventing swaps
-with_reid: True                 # ENABLED: Crucial for crowds so it tracks people by appearance, not just movement
-model: auto                     # Uses the default feature extractor model built into Ultralytics
+# # trial verzija za BUS-LJUDI
+# tracker_type: botsort
+# track_high_thresh: 0.6          
+# track_low_thresh: 0.15          
+# new_track_thresh: 0.7           
+# track_buffer: 45                
+# match_thresh: 0.8              
+# fuse_score: True                # Fuse detection confidence with motion/IoU scores to stabilize weak bounding boxes
+# # BoT-SORT specifics
+# gmc_method: none                # motion
+# # ReID model related thresh
+# proximity_thresh: 0.5           # Standard spatial proximity threshold for candidate matching
+# appearance_thresh: 0.85         # Slightly raised to ensure high visual similarity before re-assigning an ID, preventing swaps
+# with_reid: True                 # ENABLED: Crucial for crowds so it tracks people by appearance, not just movement
+# model: auto                     # Uses the default feature extractor model built into Ultralytics
 
 
 # VERZIJA NAJBOLJA ZA SKLADISTE-LJUDI I SKLADISTE-OSOBA
-# tracker_type: tracktrack
-# track_high_thresh: 0.6
-# track_low_thresh: 0.25
-# new_track_thresh: 0.7
-# track_buffer: 30
-# match_thresh: 0.7
-# with_reid: False
+tracker_type: tracktrack
+track_high_thresh: 0.6
+track_low_thresh: 0.25
+new_track_thresh: 0.7
+track_buffer: 30
+match_thresh: 0.7
+with_reid: False
 
 # VERZIJA NAJBOLJA ZA STANICA-NOC
 # tracker_type: bytetrack

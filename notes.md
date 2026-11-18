@@ -1,4 +1,4 @@
-bus ljudi - kriva vremena za end time, samo jedna osoba ima end time iako vise njih nestane
+bus ljudi - dupli id-jevi, ponavljaju se idjevi ID: 2, 3 5 ukupno 2, 2, 3 puta -> lagano rjesenje alarm napravi samo ako je velika razlika u vremenu
 skladiste ljudi - odlicno
 skladiste osoba - odlicno
 stanica noc- lose, detektira puno razlicitih ljudi (12) iako je samo jedna osoba -> update sad smo na 5 idjeva -> sad smo na 4
