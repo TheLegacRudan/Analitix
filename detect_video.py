@@ -147,7 +147,6 @@ def main():
     writer = None
     frames_processed = 0
     try:
-        # provjeri za onaj video koji ima 50 fpsa
         fps = capture.get(cv2.CAP_PROP_FPS)
         if fps <= 0:
             fps = 30.0
