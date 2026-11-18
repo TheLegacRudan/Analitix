@@ -50,7 +50,7 @@ def expand_zone(zone):
     top, bottom = min(ys), max(ys)
     diffX = right - left
     diffY = bottom - top
-    margin_x = (0.15/(diffX+0.6)) # only one calculation per zone, not expensive
+    margin_x = (0.15/(diffX+0.6))  # only one calculation per zone, not expensive
     margin_y = (0.15/(diffY+0.6))
 
     left = max(0.0, left - margin_x)
@@ -111,7 +111,7 @@ def parse_args():
         nargs="+",
         help="Optional class IDs to detect, e.g. --classes 0 for people only.",
     )
-    # pokazuje video dok obradjuje sve
+    # show video
     parser.add_argument(
         "--show",
         action="store_true",
@@ -123,7 +123,6 @@ def parse_args():
 def main():
     args = parse_args()
     video_path = ROOT / "videos" / (args.video + ".mp4")
-    # video_path = args.video.expanduser().resolve()
     output_path = ROOT / "output" / \
         (args.video + "-output" + time.strftime("-%d%m-%H%M") + ".mp4")
     print(f"Input video: {video_path}")
@@ -155,7 +154,7 @@ def main():
         height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
         if width <= 0 or height <= 0:
             raise RuntimeError(f"Could not read video dimensions: {video_path}")
-        
+
         zone = VIDEO_CONFIG["zones"][args.video]
         zone_polygon = scale_zone(zone, width, height)
         detection_polygon = scale_zone(expand_zone(zone), width, height)
@@ -235,7 +234,7 @@ def main():
                 thickness=2,
             )
 
-            #only text, not necessary
+            # only text, not necessary
             x, y = zone_polygon.reshape(-1, 2)[0]
             cv2.putText(
                 annotated_frame,
