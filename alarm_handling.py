@@ -53,9 +53,11 @@ def _segments_intersect(a, b, c, d):
 
 
 def update_alarm_states(
-    result, video_name, alarm_polygon, now, dwell_seconds, states, alarms
+    result, video_name, alarm_polygon, now, dwell_seconds, states, alarms, grace_period=0.75  # 0.75 sec is 18 frames in 24fps video, maybe go lower?
 ):
-    """Track people inside the alarm zone and record qualified dwell events."""
+    """Track people inside the alarm zone and record qualified dwell events,
+    using a grace period to handle temporary occlusions and brief disappearances.
+    """
     boxes = result.boxes
     changed = False
     triggered = []
@@ -74,7 +76,7 @@ def update_alarm_states(
             track_id = int(track_id)
             seen_track_ids.add(track_id)
 
-            # Check box overlap, not only whether its center is inside the zone.
+            # Check box overlap with the alarm zone
             x1, y1, x2, y2 = coordinates_for_box
             box_corners = [(x1, y1), (x2, y1), (x2, y2), (x1, y2)]
             alarm_points = alarm_polygon.reshape(-1, 2)
@@ -96,10 +98,19 @@ def update_alarm_states(
             )
 
             if inside_alarm_zone:
+                # Get or create state, initializing or updating last_seen_in_zone
                 state = states.setdefault(
                     track_id,
-                    {"entered_at": now, "alarm": None},
+                    {
+                        "entered_at": now,
+                        "last_seen_in_zone": now,
+                        "alarm": None,
+                    },
                 )
+                # Update last seen timestamp because they are actively in the zone right now
+                state["last_seen_in_zone"] = now
+
+                # Check if dwell time is met
                 if (
                     state["alarm"] is None
                     and now - state["entered_at"] >= dwell_seconds
@@ -119,18 +130,22 @@ def update_alarm_states(
                     alarms.append(alarm)
                     triggered.append(alarm)
                     changed = True
-            else:
-                state = states.pop(track_id, None)
-                if state is not None and state["alarm"] is not None:
-                    state["alarm"]["end_time"] = format_video_time(now)
-                    changed = True
 
-    for track_id in list(states):
-        if track_id not in seen_track_ids:
-            state = states.pop(track_id)
-            if state["alarm"] is not None:
-                state["alarm"]["end_time"] = format_video_time(now)
+    # Evaluate all active states to see who has been missing or out of the zone past the grace period
+    expired_track_ids = []
+    for track_id, state in states.items():
+        time_since_last_seen = now - state["last_seen_in_zone"]
+
+        # If they haven't been seen in the alarm zone for longer than the grace period
+        if time_since_last_seen > grace_period:
+            expired_track_ids.append(track_id)
+            if state["alarm"] is not None and state["alarm"]["end_time"] is None:
+                state["alarm"]["end_time"] = format_video_time(state["last_seen_in_zone"])
                 changed = True
+
+    # Clean up expired states
+    for track_id in expired_track_ids:
+        states.pop(track_id, None)
 
     return changed, triggered
 

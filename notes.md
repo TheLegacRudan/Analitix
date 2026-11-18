@@ -1,7 +1,7 @@
-bus ljudi - dupli id-jevi, ponavljaju se idjevi ID: 2, 3 5 ukupno 2, 2, 3 puta -> lagano rjesenje alarm napravi samo ako je velika razlika u vremenu
+bus ljudi - zamjena idjeva
 skladiste ljudi - odlicno
 skladiste osoba - odlicno
-stanica noc- lose, detektira puno razlicitih ljudi (12) iako je samo jedna osoba -> update sad smo na 5 idjeva -> sad smo na 4
+stanica noc - lose, detektira puno razlicitih ljudi (12) iako je samo jedna osoba -> update sad smo na 5 idjeva -> sad smo na 4
 
 ALT SHIFT F
 testove runnas ovako  .\venv\Scripts\python.exe -m unittest -v test_alarm_handling
