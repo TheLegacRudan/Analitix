@@ -43,13 +43,16 @@ VIDEO_CONFIG = {
             [0.42, 0.70],
         ],
     },
-    "trackers": {
-        "bus-ljudi": "bus.yaml",
-        "skladiste-ljudi": "skladiste.yaml",
-        "skladiste-osoba": "skladiste.yaml",
-        "stanica-noc": "stanica-noc.yaml",
-    },
 }
+TRACKER_CONFIGS = {
+    "crowd": "crowd.yaml",
+    "night": "night.yaml",
+    "default": "default.yaml",
+}
+PROFILE_SAMPLE_COUNT = 5
+PROFILE_SAMPLE_WINDOW_SECONDS = 4
+CROWD_PERSON_THRESHOLD = 5
+LOW_LIGHT_BRIGHTNESS_THRESHOLD = 80
 ALARM_LOG = ROOT / "alarms.json"
 
 
@@ -96,6 +99,58 @@ def keep_detections_in_zone(result, polygon):
         if cv2.pointPolygonTest(polygon, center, False) >= 0:
             indices.append(index)
     return result[indices]
+
+
+def select_tracker_profile(brightness_samples, person_counts):
+    if not brightness_samples:
+        raise ValueError("At least one video frame is required to select a tracker.")
+    if np.median(brightness_samples) < LOW_LIGHT_BRIGHTNESS_THRESHOLD:
+        return "night"
+    if max(person_counts, default=0) >= CROWD_PERSON_THRESHOLD:
+        return "crowd"
+    return "default"
+
+
+def sample_tracker_profile(model, capture, confidence, fps):
+    frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
+    last_sample_frame = max(0, round(fps * PROFILE_SAMPLE_WINDOW_SECONDS))
+    if frame_count > 0:
+        last_sample_frame = min(last_sample_frame, frame_count - 1)
+
+    sample_frames = sorted(
+        {
+            round(
+                last_sample_frame * index / (PROFILE_SAMPLE_COUNT - 1)
+            )
+            for index in range(PROFILE_SAMPLE_COUNT)
+        }
+    )
+    brightness_samples = []
+    person_counts = []
+    for frame_index in sample_frames:
+        if not capture.set(cv2.CAP_PROP_POS_FRAMES, frame_index):
+            raise RuntimeError(f"Could not seek to frame {frame_index} for profile detection.")
+        success, frame = capture.read()
+        if not success:
+            continue
+
+        brightness_samples.append(
+            float(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY).mean())
+        )
+        detections = model.predict(
+            source=frame,
+            conf=confidence,
+            classes=[0],
+            verbose=False,
+        )[0]
+        if detections.boxes is None:
+            person_counts.append(0)
+        else:
+            person_counts.append(len(detections.boxes))
+
+    if not capture.set(cv2.CAP_PROP_POS_FRAMES, 0):
+        raise RuntimeError("Could not rewind video after tracker profile detection.")
+    return select_tracker_profile(brightness_samples, person_counts)
 
 
 def parse_args():
@@ -146,10 +201,6 @@ def main():
     if not 0 <= args.confidence <= 1:
         raise ValueError("--confidence must be between 0 and 1.")
 
-    tracker_config = ROOT / "trackers" / VIDEO_CONFIG["trackers"][args.video]
-    if not tracker_config.is_file():
-        raise FileNotFoundError(f"Tracker configuration not found: {tracker_config}")
-
     model = YOLO("yolo11n.pt")
     capture = cv2.VideoCapture(str(video_path))
     if not capture.isOpened():
@@ -169,6 +220,19 @@ def main():
         height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
         if width <= 0 or height <= 0:
             raise RuntimeError(f"Could not read video dimensions: {video_path}")
+
+        tracker_profile = sample_tracker_profile(
+            model, capture, args.confidence, fps
+        )
+        tracker_config = ROOT / "trackers" / TRACKER_CONFIGS[tracker_profile]
+        if not tracker_config.is_file():
+            raise FileNotFoundError(
+                f"Tracker configuration not found: {tracker_config}"
+            )
+        print(
+            f"Selected tracker profile: {tracker_profile} "
+            f"({tracker_config.name})"
+        )
 
         zone = VIDEO_CONFIG["zones"][args.video]
         zone_polygon = scale_zone(zone, width, height)
