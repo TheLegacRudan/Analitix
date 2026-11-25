@@ -1,3 +1,5 @@
+rijesit - kako se poziva kad koji setting...
+
 bus ljudi - zamjena idjeva
 skladiste ljudi - odlicno
 skladiste osoba - odlicno

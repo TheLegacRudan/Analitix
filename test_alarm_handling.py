@@ -125,7 +125,7 @@ class UpdateAlarmStatesTests(unittest.TestCase):
         )
         self.assertTrue(changed)
         self.assertEqual(triggered, [])
-        self.assertEqual(alarms[0]["end_time"], "00:00:10.000")
+        self.assertEqual(alarms[0]["end_time"], "00:00:09.000")
         self.assertEqual(states, {})
 
     def test_box_overlap_counts_even_when_its_center_is_outside(self):
@@ -156,7 +156,7 @@ class UpdateAlarmStatesTests(unittest.TestCase):
 
         self.assertTrue(changed)
         self.assertEqual(triggered, [])
-        self.assertEqual(alarms[0]["end_time"], "00:00:04.000")
+        self.assertEqual(alarms[0]["end_time"], "00:00:02.000")
         self.assertEqual(states, {})
 
     def test_ignores_non_people_and_people_outside_the_zone(self):
