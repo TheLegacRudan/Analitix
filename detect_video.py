@@ -43,6 +43,12 @@ VIDEO_CONFIG = {
             [0.42, 0.70],
         ],
     },
+    "trackers": {
+        "bus-ljudi": "bus.yaml",
+        "skladiste-ljudi": "skladiste.yaml",
+        "skladiste-osoba": "skladiste.yaml",
+        "stanica-noc": "stanica-noc.yaml",
+    },
 }
 ALARM_LOG = ROOT / "alarms.json"
 
@@ -140,6 +146,10 @@ def main():
     if not 0 <= args.confidence <= 1:
         raise ValueError("--confidence must be between 0 and 1.")
 
+    tracker_config = ROOT / "trackers" / VIDEO_CONFIG["trackers"][args.video]
+    if not tracker_config.is_file():
+        raise FileNotFoundError(f"Tracker configuration not found: {tracker_config}")
+
     model = YOLO("yolo11n.pt")
     capture = cv2.VideoCapture(str(video_path))
     if not capture.isOpened():
@@ -186,7 +196,9 @@ def main():
                 "verbose": False,
             }
 
-            result = model.track(persist=True, tracker="yolo_config.yaml", **predict_options)[0]
+            result = model.track(
+                persist=True, tracker=str(tracker_config), **predict_options
+            )[0]
             # result = model.track(persist=True, **predict_options)[0]
 
             alarms_changed, triggered = update_alarm_states(
